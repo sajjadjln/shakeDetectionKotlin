@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,42 +27,58 @@ class MainActivity : ComponentActivity() {
     private var acceleration = 0f
     private var currentAcceleration = 0f
     private var lastAcceleration = 0f
+    private var lastShakeTime: Long = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-            Objects.requireNonNull(sensorManager)?.registerListener(sensorListener, sensorManager!!
-                .getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL)
-            acceleration = 2f
-            currentAcceleration = SensorManager.GRAVITY_EARTH //standard acceleration
-            lastAcceleration = SensorManager.GRAVITY_EARTH //baseline for calculating changes
-        }
+        //setcontent{
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        Objects.requireNonNull(sensorManager)?.registerListener(
+            sensorListener, sensorManager!!
+                .getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL
+        )
+        acceleration = 1f
+        currentAcceleration = SensorManager.GRAVITY_EARTH //standard acceleration
+        lastAcceleration = SensorManager.GRAVITY_EARTH //baseline for calculating changes
+        lastShakeTime = System.currentTimeMillis()
+
     }
-    private val sensorListener: SensorEventListener = object : SensorEventListener { //anonymous object
-        override fun onSensorChanged(event: SensorEvent) {
-            val x = event.values[0]
-            val y = event.values[1]
-            val z = event.values[2]
-            //measures acceleration
-            //Log.d("SensorManagers", "onSensorChanged: x: $x, y: $y, z: $z")
-            lastAcceleration = currentAcceleration
-            currentAcceleration = sqrt((x * x + y * y + z * z).toDouble()).toFloat()
-            val delta: Float = currentAcceleration - lastAcceleration
-            acceleration = acceleration * 0.99f + delta //applies a smoothing factor (0.9f) to the existing acceleration and adds the change in acceleration (delta). This is a way to smooth out rapid changes in acceleration and focus on gradual changes
-            Log.d("SensorManagers", "onSensorChanged: acceleration: $acceleration")
-            if (acceleration > 5) {
-                Toast.makeText(this@MainActivity, "Shake detected!", Toast.LENGTH_SHORT).show()
-                acceleration = 0f
+
+    private val sensorListener: SensorEventListener =
+        object : SensorEventListener { //anonymous object
+            override fun onSensorChanged(event: SensorEvent) {
+                val x = event.values[0]
+                val y = event.values[1]
+                val z = event.values[2]
+                //measures acceleration force in m/s^2 that is applied to a device on all three physical axes (x, y, and z), including the force of gravity
+                lastAcceleration = currentAcceleration
+                currentAcceleration = sqrt((x * x + y * y + z * z).toDouble()).toFloat()
+                val delta: Float = currentAcceleration - lastAcceleration
+                acceleration =
+                    acceleration * 0.9f + delta //applies a smoothing factor (0.9f) to the existing acceleration and adds the change in acceleration (delta). This is a way to smooth out rapid changes in acceleration and focus on gradual changes
+                val currentTime = System.currentTimeMillis()
+                val timeElapsedSinceLastShake = currentTime - lastShakeTime
+                Log.d(
+                    "SensorManagers",
+                    "onSensorChanged: acceleration: $acceleration, timeElapsedSinceLastShake: $timeElapsedSinceLastShake"
+                )
+                if (acceleration > 3.5 && timeElapsedSinceLastShake > 1000) {
+                    Toast.makeText(this@MainActivity, "Shake detected!", Toast.LENGTH_SHORT).show()
+                    lastShakeTime = currentTime
+                }
             }
+
+            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
         }
-        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
-    }
+
     override fun onResume() {
-        sensorManager?.registerListener(sensorListener, sensorManager!!.getDefaultSensor(
-            Sensor .TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL
+        sensorManager?.registerListener(
+            sensorListener, sensorManager!!.getDefaultSensor(
+                Sensor.TYPE_ACCELEROMETER
+            ), SensorManager.SENSOR_DELAY_NORMAL
         )
         super.onResume()
     }
+
     override fun onPause() {
         sensorManager!!.unregisterListener(sensorListener)
         super.onPause()
