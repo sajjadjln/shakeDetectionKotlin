@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
             sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
             Objects.requireNonNull(sensorManager)?.registerListener(sensorListener, sensorManager!!
                 .getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL)
-            acceleration = 6f
+            acceleration = 2f
             currentAcceleration = SensorManager.GRAVITY_EARTH //standard acceleration
             lastAcceleration = SensorManager.GRAVITY_EARTH //baseline for calculating changes
         }
@@ -51,8 +51,9 @@ class MainActivity : ComponentActivity() {
             val delta: Float = currentAcceleration - lastAcceleration
             acceleration = acceleration * 0.99f + delta //applies a smoothing factor (0.9f) to the existing acceleration and adds the change in acceleration (delta). This is a way to smooth out rapid changes in acceleration and focus on gradual changes
             Log.d("SensorManagers", "onSensorChanged: acceleration: $acceleration")
-            if (acceleration > 8) {
+            if (acceleration > 5) {
                 Toast.makeText(this@MainActivity, "Shake detected!", Toast.LENGTH_SHORT).show()
+                acceleration = 0f
             }
         }
         override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
