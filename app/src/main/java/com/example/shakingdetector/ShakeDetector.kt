@@ -50,7 +50,7 @@ class ShakeDetector(private val context: Context, private val onShakeListener: O
         val currentTime = System.currentTimeMillis()
         val timeElapsedSinceLastShake = currentTime - lastShakeTime
         Log.d("ShakeDetector", "acceleration: $acceleration")
-        if (acceleration > 4.5 && timeElapsedSinceLastShake > 1000) {
+        if (acceleration > 5.5 && timeElapsedSinceLastShake > 2000) {
             onShakeListener.onShake()
             lastShakeTime = currentTime
         }
@@ -70,5 +70,15 @@ class ShakeDetector(private val context: Context, private val onShakeListener: O
 
     fun onPause() {
         sensorManager?.unregisterListener(this)
+    }
+    fun onDisable() {
+        sensorManager?.unregisterListener(this)
+    }
+    fun onEnable() {
+        sensorManager?.registerListener(
+            this,
+            sensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+            SensorManager.SENSOR_DELAY_NORMAL
+        )
     }
 }
